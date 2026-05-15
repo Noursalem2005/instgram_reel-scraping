@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Instagram Reel Analyzer</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  />
+
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="glass-card">
+
+      <h1>
+        Instagram Reel Analyzer
+      </h1>
+
+      <p class="subtitle">
+        Advanced Instagram reel scraping
+        and analytics dashboard.
+      </p>
+
+      <div class="search-box">
+
+        <input
+          type="text"
+          id="reelUrl"
+          placeholder="Paste Instagram Reel URL"
+        />
+
+        <button onclick="analyzeReel()">
+          Analyze Reel
+        </button>
+
+      </div>
+
+      <div
+        id="loading"
+        class="loading hidden"
+      >
+        Scraping reel data...
+      </div>
+
+      <div
+        id="result"
+        class="result hidden"
+      ></div>
+
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+
+</body>
+</html>

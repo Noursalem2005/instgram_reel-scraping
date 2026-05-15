@@ -1,50 +1,130 @@
-const chromium = require('chrome-aws-lambda');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer-extra');
+
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+
+puppeteer.use(StealthPlugin());
 
 async function scrapeReelData(reelUrl) {
-    const browser = await puppeteer.launch({
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath,
-        headless: chromium.headless,
-      }); 
-      console.log("Executable path:", await chromium.executablePath);
-  const page = await browser.newPage();
-  await page.goto(reelUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-  const result = await page.evaluate(() => {
-    const getMeta = (name) => document.querySelector(`meta[property="${name}"]`)?.content;
-
-    const description = getMeta('og:description') || "";
-    const regexLikes = /([\d.,]+[KkMm]?) likes/;
-    const regexComments = /([\d.,]+) comments/;
-    const regexAuthor = /- (.*?) on/;
-    const regexDate = /on ([A-Za-z]+ \d{1,2}, \d{4})/;
-
-    const likes = description.match(regexLikes)?.[1] || null;
-    const comments = description.match(regexComments)?.[1] || null;
-    const author = description.match(regexAuthor)?.[1] || null;
-    const postedDate = description.match(regexDate)?.[1] || null;
-
-    const captionAndTags = description.split("‎: ")[1] || "";
-    const caption = captionAndTags.split("\n")[0];
-    const hashtags = captionAndTags.match(/#[^\s#]+/g) || [];
-
-    return {
-      likes,
-      comments,
-      author,
-      postedDate,
-      caption,
-      hashtags,
-      thumbnail: getMeta('og:image'),
-      videoUrl: getMeta('og:video'),
-      timestamp: new Date().toISOString()
-    };
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox'
+    ]
   });
 
-  await browser.close();
-  return result;
+  try {
+
+    const page = await browser.newPage();
+
+    await page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36'
+    );
+
+    await page.setViewport({
+      width: 1366,
+      height: 768
+    });
+
+    await page.goto(reelUrl, {
+      waitUntil: 'networkidle2',
+      timeout: 60000
+    });
+
+    await new Promise(resolve =>
+      setTimeout(resolve, 6000)
+    );
+
+    const data = await page.evaluate(() => {
+
+      const scripts =
+        Array.from(document.querySelectorAll('script'));
+
+      let raw = '';
+
+      for (const script of scripts) {
+
+        if (
+          script.textContent.includes('like_count') ||
+          script.textContent.includes('play_count')
+        ) {
+          raw = script.textContent;
+          break;
+        }
+      }
+
+      const likeMatch =
+        raw.match(/"like_count":(\\d+)/);
+
+      const commentMatch =
+        raw.match(/"comment_count":(\\d+)/);
+
+      const viewMatch =
+        raw.match(/"play_count":(\\d+)/);
+
+      const videoMatch =
+        raw.match(/"video_url":"(.*?)"/);
+
+      const imageMatch =
+        raw.match(/"display_url":"(.*?)"/);
+
+      const captionMatch =
+        raw.match(/"text":"(.*?)"/);
+
+      const ownerMatch =
+        raw.match(/"username":"(.*?)"/);
+
+      const hashtags =
+        captionMatch?.[1]?.match(/#[^\\s#]+/g) || [];
+
+      return {
+
+        likes:
+          likeMatch?.[1] || 'Hidden',
+
+        comments:
+          commentMatch?.[1] || 'Hidden',
+
+        views:
+          viewMatch?.[1] || 'Hidden',
+
+        caption:
+          captionMatch?.[1]
+            ?.replace(/\\\\n/g, ' ')
+            ?.replace(/\\\\u0026/g, '&')
+          || null,
+
+        author:
+          ownerMatch?.[1] || 'Unknown',
+
+        hashtags,
+
+        thumbnail:
+          imageMatch?.[1]
+            ?.replace(/\\\\u0026/g, '&')
+          || null,
+
+        videoUrl:
+          videoMatch?.[1]
+            ?.replace(/\\\\u0026/g, '&')
+          || null,
+
+        timestamp:
+          new Date().toISOString()
+      };
+    });
+
+    await browser.close();
+
+    return data;
+
+  } catch (err) {
+
+    await browser.close();
+
+    throw err;
+  }
 }
 
 module.exports = scrapeReelData;
