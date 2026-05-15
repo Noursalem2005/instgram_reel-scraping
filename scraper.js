@@ -2,61 +2,72 @@ const puppeteer = require('puppeteer');
 
 async function scrapeReelData(reelUrl) {
 
-  console.log('Launching browser...');
+  const browser = await puppeteer.launch({
 
-  const browser =
-    await puppeteer.launch({
+    headless: true,
 
-      headless: true,
+    executablePath:
+      process.env.PUPPETEER_EXECUTABLE_PATH,
 
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--single-process'
-      ]
-    });
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage'
+    ]
+  });
 
   try {
-
-    console.log('Browser launched');
 
     const page =
       await browser.newPage();
 
-    console.log('Page created');
+    await page.setUserAgent(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36'
+    );
 
     await page.goto(reelUrl, {
 
-      waitUntil: 'domcontentloaded',
+      waitUntil: 'networkidle2',
 
       timeout: 60000
     });
 
-    console.log('Instagram loaded');
+    await new Promise(resolve =>
+      setTimeout(resolve, 5000)
+    );
 
-    const title =
-      await page.title();
-
-    console.log('PAGE TITLE:', title);
+    const html =
+      await page.content();
 
     await browser.close();
 
     return {
 
-      success: true,
+      likes:
+        html.match(/"like_count":(\\d+)/)?.[1]
+        || 'Hidden',
 
-      title,
+      comments:
+        html.match(/"comment_count":(\\d+)/)?.[1]
+        || 'Hidden',
+
+      views:
+        html.match(/"play_count":(\\d+)/)?.[1]
+        || 'Hidden',
+
+      author:
+        html.match(/"username":"(.*?)"/)?.[1]
+        || 'Unknown',
+
+      caption:
+        html.match(/"text":"(.*?)"/)?.[1]
+        || null,
 
       timestamp:
         new Date().toISOString()
     };
 
   } catch (err) {
-
-    console.log('SCRAPER INNER ERROR');
-    console.log(err);
 
     await browser.close();
 
