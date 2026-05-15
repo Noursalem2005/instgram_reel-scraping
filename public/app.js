@@ -7,7 +7,7 @@ async function analyzeReel() {
     document.getElementById("result");
 
   result.innerHTML =
-    `<div class="loading">Analyzing reel...</div>`;
+    "<p>Scraping reel...</p>";
 
   try {
 
@@ -19,10 +19,12 @@ async function analyzeReel() {
     const data =
       await response.json();
 
-    if (!response.ok) {
+    console.log(data);
+
+    if (!data.success) {
 
       throw new Error(
-        data.error || "Failed to analyze reel"
+        data.error || "Unknown server error"
       );
     }
 
@@ -33,55 +35,27 @@ async function analyzeReel() {
 
       <div class="card">
 
-        <h2>Analysis Result</h2>
+        <h2>Instagram Reel Analysis</h2>
 
-        <div class="grid">
+        <p><strong>Author:</strong> ${data.author}</p>
 
-          <div class="item">
-            <span class="label">Author</span>
-            <span class="value">
-              ${data.author || "Unknown"}
-            </span>
-          </div>
+        <p><strong>Likes:</strong> ${data.likes}</p>
 
-          <div class="item">
-            <span class="label">Likes</span>
-            <span class="value">
-              ${data.likes || "Hidden"}
-            </span>
-          </div>
+        <p><strong>Comments:</strong> ${data.comments}</p>
 
-          <div class="item">
-            <span class="label">Comments</span>
-            <span class="value">
-              ${data.comments || "Hidden"}
-            </span>
-          </div>
+        <p><strong>Views:</strong> ${data.views}</p>
 
-          <div class="item">
-            <span class="label">Views</span>
-            <span class="value">
-              ${data.views || "Hidden"}
-            </span>
-          </div>
-
-        </div>
+        <h3>Hashtags</h3>
 
         <div class="hashtags">
 
-          <h3>Hashtags</h3>
-
-          <div class="tags">
-
-            ${
-              hashtags.length
-                ? hashtags.map(tag =>
-                    `<span class="tag">${tag}</span>`
-                  ).join("")
-                : "<span>No hashtags found</span>"
-            }
-
-          </div>
+          ${
+            hashtags.length
+              ? hashtags.map(tag =>
+                  `<span class="tag">${tag}</span>`
+                ).join("")
+              : "No hashtags found"
+          }
 
         </div>
 
@@ -89,6 +63,8 @@ async function analyzeReel() {
     `;
 
   } catch (err) {
+
+    console.error(err);
 
     result.innerHTML = `
 

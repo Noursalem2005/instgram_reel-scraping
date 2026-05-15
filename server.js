@@ -1,67 +1,68 @@
-const express = require('express');
-const path = require('path');
+const express =
+  require("express");
 
-const scrapeReelData = require('./scraper');
+const path =
+  require("path");
 
-const app = express();
+const scrapeReelData =
+  require("./scraper");
+
+const app =
+  express();
+
+const PORT =
+  process.env.PORT || 8080;
 
 app.use(
   express.static(
-    path.join(__dirname, 'public')
+    path.join(__dirname, "public")
   )
 );
 
-app.get('/', (req, res) => {
-
-  res.sendFile(
-    path.join(__dirname, 'public', 'index.html')
-  );
-});
-
-app.get('/api/analyze', async (req, res) => {
+app.get("/api/analyze", async (req, res) => {
 
   try {
 
-    const { url } = req.query;
+    const reelUrl =
+      req.query.url;
 
-    console.log('================================');
-    console.log('NEW REQUEST');
-    console.log('URL:', url);
-
-    if (!url) {
-
-      console.log('Missing URL');
+    if (!reelUrl) {
 
       return res.status(400).json({
-        error: 'Missing URL'
+
+        error: "No URL provided"
       });
     }
 
     const data =
-      await scrapeReelData(url);
+      await scrapeReelData(reelUrl);
 
-    console.log('SCRAPE SUCCESS');
+    return res.json({
 
-    return res.json(data);
+      success: true,
+
+      ...data
+    });
 
   } catch (err) {
 
-    console.log('SCRAPER FAILED');
-    console.log(err);
-    console.log(err.message);
-    console.log(err.stack);
+    console.error(err);
 
     return res.status(500).json({
 
-      error: err.message,
+      success: false,
 
-      stack: err.stack
+      error: err.message
     });
   }
 });
 
-const PORT =
-  process.env.PORT || 8080;
+app.get("*", (req, res) => {
+
+  res.sendFile(
+    path.join(__dirname, "public", "index.html")
+  );
+});
 
 app.listen(PORT, () => {
 
