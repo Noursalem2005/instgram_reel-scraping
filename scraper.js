@@ -1,20 +1,23 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
+
+const chromium =
+  require('@sparticuz/chromium');
 
 async function scrapeReelData(reelUrl) {
 
-  const browser = await puppeteer.launch({
+  const browser =
+    await puppeteer.launch({
 
-    headless: true,
+      args: chromium.args,
 
-    executablePath:
-      process.env.PUPPETEER_EXECUTABLE_PATH,
+      defaultViewport:
+        chromium.defaultViewport,
 
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage'
-    ]
-  });
+      executablePath:
+        await chromium.executablePath(),
+
+      headless: chromium.headless
+    });
 
   try {
 
@@ -29,12 +32,8 @@ async function scrapeReelData(reelUrl) {
 
       waitUntil: 'networkidle2',
 
-      timeout: 60000
+      timeout: 90000
     });
-
-    await new Promise(resolve =>
-      setTimeout(resolve, 5000)
-    );
 
     const html =
       await page.content();
@@ -59,10 +58,6 @@ async function scrapeReelData(reelUrl) {
         html.match(/"username":"(.*?)"/)?.[1]
         || 'Unknown',
 
-      caption:
-        html.match(/"text":"(.*?)"/)?.[1]
-        || null,
-
       timestamp:
         new Date().toISOString()
     };
@@ -75,4 +70,5 @@ async function scrapeReelData(reelUrl) {
   }
 }
 
-module.exports = scrapeReelData;
+module.exports =
+  scrapeReelData;
