@@ -1,16 +1,21 @@
-const puppeteer = require('puppeteer-extra');
-
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-
-puppeteer.use(StealthPlugin());
+const puppeteer = require('puppeteer');
 
 async function scrapeReelData(reelUrl) {
 
   const browser = await puppeteer.launch({
+
     headless: true,
+
+    executablePath:
+      process.env.PUPPETEER_EXECUTABLE_PATH ||
+      puppeteer.executablePath(),
+
     args: [
       '--no-sandbox',
-      '--disable-setuid-sandbox'
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--single-process'
     ]
   });
 
@@ -22,18 +27,13 @@ async function scrapeReelData(reelUrl) {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0.0.0 Safari/537.36'
     );
 
-    await page.setViewport({
-      width: 1366,
-      height: 768
-    });
-
     await page.goto(reelUrl, {
       waitUntil: 'networkidle2',
       timeout: 60000
     });
 
     await new Promise(resolve =>
-      setTimeout(resolve, 6000)
+      setTimeout(resolve, 5000)
     );
 
     const data = await page.evaluate(() => {
@@ -46,10 +46,11 @@ async function scrapeReelData(reelUrl) {
       for (const script of scripts) {
 
         if (
-          script.textContent.includes('like_count') ||
-          script.textContent.includes('play_count')
+          script.textContent.includes('like_count')
         ) {
+
           raw = script.textContent;
+
           break;
         }
       }
@@ -63,20 +64,14 @@ async function scrapeReelData(reelUrl) {
       const viewMatch =
         raw.match(/"play_count":(\\d+)/);
 
-      const videoMatch =
-        raw.match(/"video_url":"(.*?)"/);
-
-      const imageMatch =
-        raw.match(/"display_url":"(.*?)"/);
+      const ownerMatch =
+        raw.match(/"username":"(.*?)"/);
 
       const captionMatch =
         raw.match(/"text":"(.*?)"/);
 
-      const ownerMatch =
-        raw.match(/"username":"(.*?)"/);
-
-      const hashtags =
-        captionMatch?.[1]?.match(/#[^\\s#]+/g) || [];
+      const imageMatch =
+        raw.match(/"display_url":"(.*?)"/);
 
       return {
 
@@ -89,24 +84,14 @@ async function scrapeReelData(reelUrl) {
         views:
           viewMatch?.[1] || 'Hidden',
 
-        caption:
-          captionMatch?.[1]
-            ?.replace(/\\\\n/g, ' ')
-            ?.replace(/\\\\u0026/g, '&')
-          || null,
-
         author:
           ownerMatch?.[1] || 'Unknown',
 
-        hashtags,
+        caption:
+          captionMatch?.[1] || null,
 
         thumbnail:
           imageMatch?.[1]
-            ?.replace(/\\\\u0026/g, '&')
-          || null,
-
-        videoUrl:
-          videoMatch?.[1]
             ?.replace(/\\\\u0026/g, '&')
           || null,
 
