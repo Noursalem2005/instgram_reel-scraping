@@ -22,28 +22,25 @@ app.get('/api/analyze', async (req, res) => {
 
   const { url } = req.query;
 
-  if (
-    !url ||
-    !url.includes('instagram.com/reel')
-  ) {
-
-    return res.status(400).json({
-      error: 'Invalid Instagram reel URL'
-    });
-  }
-
   try {
+
+    console.log('Incoming URL:', url);
 
     const data =
       await scrapeReelData(url);
+
+    console.log('Scrape success');
 
     res.json(data);
 
   } catch (err) {
 
+    console.error('SCRAPER ERROR:');
+    console.error(err);
+
     res.status(500).json({
-      error: 'Failed to scrape reel',
-      details: err.message
+      error: err.message,
+      stack: err.stack
     });
   }
 });
