@@ -43,15 +43,15 @@ async function scrapeReelData(reelUrl) {
     return {
 
       likes:
-        html.match(/"like_count":(\\d+)/)?.[1]
+        html.match(/"like_count":(\d+)/)?.[1]
         || 'Hidden',
 
       comments:
-        html.match(/"comment_count":(\\d+)/)?.[1]
+        html.match(/"comment_count":(\d+)/)?.[1]
         || 'Hidden',
 
       views:
-        html.match(/"play_count":(\\d+)/)?.[1]
+        html.match(/"play_count":(\d+)/)?.[1]
         || 'Hidden',
 
       author:
