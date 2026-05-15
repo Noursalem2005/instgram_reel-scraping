@@ -1,139 +1,87 @@
 async function analyzeReel() {
 
   const url =
-    document.getElementById('reelUrl').value;
+    document.getElementById("reelUrl").value;
 
-  const resultDiv =
-    document.getElementById('result');
+  const result =
+    document.getElementById("result");
 
-  const loading =
-    document.getElementById('loading');
-
-  resultDiv.classList.add('hidden');
-
-  loading.classList.remove('hidden');
+  result.innerHTML =
+    `<div class="loading">Analyzing reel...</div>`;
 
   try {
 
-    const response = await fetch(
-      `/api/analyze?url=${encodeURIComponent(url)}`
-    );
+    const response =
+      await fetch(
+        `/api/analyze?url=${encodeURIComponent(url)}`
+      );
 
     const data =
       await response.json();
 
-    loading.classList.add('hidden');
+    if (!response.ok) {
 
-    resultDiv.classList.remove('hidden');
-
-    if (data.error) {
-
-      resultDiv.innerHTML = `
-        <div class="result-card">
-          <div class="result-content">
-            <h2>Error</h2>
-            <p>${data.error}</p>
-          </div>
-        </div>
-      `;
-
-      return;
+      throw new Error(
+        data.error || "Failed to analyze reel"
+      );
     }
 
-    resultDiv.innerHTML = `
-      <div class="result-card">
+    const hashtags =
+      data.hashtags || [];
 
-        ${
-          data.thumbnail
-          ?
-          `
-            <img
-              class="thumbnail"
-              src="${data.thumbnail}"
-            />
-          `
-          :
-          ''
-        }
+    result.innerHTML = `
 
-        <div class="result-content">
+      <div class="card">
 
-          <h2>
-            @${data.author}
-          </h2>
+        <h2>Analysis Result</h2>
 
-          <div class="grid">
+        <div class="grid">
 
-            <div class="info-box">
-              <h3>Likes</h3>
-              <p>${data.likes}</p>
-            </div>
-
-            <div class="info-box">
-              <h3>Comments</h3>
-              <p>${data.comments}</p>
-            </div>
-
-            <div class="info-box">
-              <h3>Views</h3>
-              <p>${data.views}</p>
-            </div>
-
-            <div class="info-box">
-              <h3>Scraped</h3>
-              <p>
-                ${new Date(
-                  data.timestamp
-                ).toLocaleTimeString()}
-              </p>
-            </div>
-
+          <div class="item">
+            <span class="label">Author</span>
+            <span class="value">
+              ${data.author || "Unknown"}
+            </span>
           </div>
 
-          <div class="caption">
-
-            <h3>
-              Caption
-            </h3>
-
-            <p>
-              ${
-                data.caption ||
-                'No caption found.'
-              }
-            </p>
-
+          <div class="item">
+            <span class="label">Likes</span>
+            <span class="value">
+              ${data.likes || "Hidden"}
+            </span>
           </div>
+
+          <div class="item">
+            <span class="label">Comments</span>
+            <span class="value">
+              ${data.comments || "Hidden"}
+            </span>
+          </div>
+
+          <div class="item">
+            <span class="label">Views</span>
+            <span class="value">
+              ${data.views || "Hidden"}
+            </span>
+          </div>
+
+        </div>
+
+        <div class="hashtags">
+
+          <h3>Hashtags</h3>
 
           <div class="tags">
 
             ${
-              data.hashtags
-                .map(tag => `
-                  <span class="tag">
-                    ${tag}
-                  </span>
-                `)
-                .join('')
+              hashtags.length
+                ? hashtags.map(tag =>
+                    `<span class="tag">${tag}</span>`
+                  ).join("")
+                : "<span>No hashtags found</span>"
             }
 
           </div>
-
-          ${
-            data.videoUrl
-            ?
-            `
-              <a
-                class="video-btn"
-                href="${data.videoUrl}"
-                target="_blank"
-              >
-                Open Video
-              </a>
-            `
-            :
-            ''
-          }
 
         </div>
 
@@ -142,16 +90,14 @@ async function analyzeReel() {
 
   } catch (err) {
 
-    loading.classList.add('hidden');
+    result.innerHTML = `
 
-    resultDiv.classList.remove('hidden');
+      <div class="error">
 
-    resultDiv.innerHTML = `
-      <div class="result-card">
-        <div class="result-content">
-          <h2>Server Error</h2>
-          <p>${err.message}</p>
-        </div>
+        <h3>Server Error</h3>
+
+        <p>${err.message}</p>
+
       </div>
     `;
   }
